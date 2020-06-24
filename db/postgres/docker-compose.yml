@@ -1,0 +1,40 @@
+version: "3.8"
+
+# uses .env file for variables by default
+# alternately can set environment variables from command line first: export POSTGRES_USER=myuser
+# alternately can set environment variables: POSTGRES_USER=myuser docker-compose up
+
+# db initialization scripts are run in alphabetical order
+
+services:
+  postgres: 
+    image: postgres:12.3
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdb-data:/var/lib/postgresql/data
+      - ./db-scripts/:/docker-entrypoint-initdb.d/
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4:2020-06-23-1
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+
+volumes:
+  pgdb-data:
+  pgadmin:
