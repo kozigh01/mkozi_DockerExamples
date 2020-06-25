@@ -1,0 +1,32 @@
+version: '3'
+services: 
+  ubuntu:
+    depends_on: 
+      - elasticsearch
+    build: 
+      context: ./
+      dockerfile: Dockerfile.ubuntu
+    volumes:
+      - ./scripts:/app/scripts
+    command: /bin/bash -c "./scripts/01_load-shakespeare.sh"
+    stdin_open: true
+    tty: true
+    networks:
+      - elastic
+  elasticsearch:
+    image: elasticsearch:7.6.0
+    environment: 
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+      - "22:22"
+      - "5601:5601"
+    networks: 
+      - elastic
+    volumes: 
+      - elastic:/usr/share/elasticsearch/data
+networks: 
+  elastic:
+volumes:
+  elastic:
