@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PORT_API=3000
 
 COPY package.json ./
-RUN npm install
+RUN npm install && npm cache clean --force
 
 copy . .
 
