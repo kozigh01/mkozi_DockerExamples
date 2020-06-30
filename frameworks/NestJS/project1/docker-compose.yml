@@ -14,9 +14,9 @@ services:
       - ${PORT_API}:${PORT_API}
       - 9229:9229
     networks:
-      - front-end
+      - back-end
 
 networks:
-  front-end:
+  back-end:
 
 
