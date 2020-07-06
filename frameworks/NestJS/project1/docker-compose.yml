@@ -2,12 +2,10 @@ version: "3.8"
 
 services: 
   nestjs:
-    container_name: web-api
     build:
       context: .
-      dockerfile: Dockerfile
       target: dev
-    command: npm run start:dev
+    command: npm run start:debug
     env_file: .env
     volumes:
       - .:/node/app
@@ -16,9 +14,9 @@ services:
       - ${PORT_API}:${PORT_API}
       - 9229:9229
     networks:
-      - back-end
+      - backend
 
 networks:
-  back-end:
+  backend:
 
 

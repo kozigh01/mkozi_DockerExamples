@@ -2,23 +2,24 @@ FROM node:14-alpine As prod
 
 ENV PORT_API=3000
 
-EXPOSE ${PORT_API}
-
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini 
 # RUN apk add --update curl && <other required packages>
 
 WORKDIR /node
 # RUN mkdir node && chown -R node:node .
 
 COPY package.json package-lock*.json ./
-RUN chown -R node:node . \
-    && npm install -g @nestjs/cli
+RUN chown -R node:node .
 USER node
 RUN npm install --only=production \
     && npm cache clean --force
 
+ENV PATH /node/node_modules/.bin:$PATH
+
 WORKDIR /node/app
 COPY --chown=node:node . .
+
+EXPOSE ${PORT_API}
 
 ENTRYPOINT [ "/sbin/tini", "--" ]
 CMD ["node", "dist/main"]
