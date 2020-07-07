@@ -5,10 +5,11 @@ services:
     build:
       context: .
       target: dev
-    command: npm run start:debug
+      # target: prod
+    # command: npm run start:debug
     env_file: .env
     volumes:
-      - .:/node/app
+      - .:/node/app:delegated
       - /node/app/node_modules  # this hides the node_modules directory that exists in the host system
     ports:
       - ${PORT_API}:${PORT_API}

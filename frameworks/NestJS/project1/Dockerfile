@@ -1,35 +1,48 @@
-FROM node:14-alpine As prod
+## Stage 1 (production base)
+# This gets our prod dependencies installed and out of the way
+FROM node:14-alpine As base
 
+ENV NODE_ENV=production
 ENV PORT_API=3000
+EXPOSE ${PORT_API}
 
 RUN apk add --no-cache tini 
 # RUN apk add --update curl && <other required packages>
 
 WORKDIR /node
-# RUN mkdir node && chown -R node:node .
 
-COPY package.json package-lock*.json ./
+COPY package*.json ./
 RUN chown -R node:node .
 USER node
-RUN npm install --only=production \
+RUN npm ci \
     && npm cache clean --force
 
-ENV PATH /node/node_modules/.bin:$PATH
 
-WORKDIR /node/app
-COPY --chown=node:node . .
-
-EXPOSE ${PORT_API}
-
-ENTRYPOINT [ "/sbin/tini", "--" ]
-CMD ["node", "dist/main"]
-
+## Stage 2 (development)
+# we don't COPY in this stage because for dev you'll bind-mount anyway
+# this saves time when building locally for dev via docker-compose
 # can run with: docker run --name nest1 -e PORT_API=3002 -p 3002:3002 --rm nest1
 #   - the app is setup to listen on PORT_API or default 3000
+FROM base as dev
 
-FROM prod as dev
+ENV NODE_ENV=development
+ENV PATH=/node/node_modules/.bin:$PATH
+
 WORKDIR /node
-RUN npm install --only=development
+
+RUN npm install --only-development
+
 WORKDIR /node/app
-CMD ["npm", "run", "start:dev"]
+
+ENTRYPOINT [ "/sbin/tini", "--" ]
+CMD ["npm", "run", "start:debug"]
+
+
+## Stage 3 (copy in source for prod)
+# This gets our source code into builder
+# this stage starts from the first one and skips dev
+FROM base as prod
+WORKDIR /node/app
+COPY . .
+CMD ["node", "dist/main"]s
 
