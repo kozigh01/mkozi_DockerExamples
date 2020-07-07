@@ -6,7 +6,8 @@ ENV NODE_ENV=production
 ENV PORT_API=3000
 EXPOSE ${PORT_API}
 
-RUN apk add --no-cache tini 
+RUN npm config list \
+    && apk add --no-cache tini 
 # RUN apk add --update curl && <other required packages>
 
 WORKDIR /node
