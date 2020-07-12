@@ -4,15 +4,17 @@ services:
   nestjs:
     build:
       context: .
-      target: dev
-      # target: prod
+      target: prod
     # command: npm run start:debug
     env_file: .env
+    # environment: 
+      # - NODE_ENV=production
     volumes:
       - .:/node/app:delegated
       - /node/app/node_modules  # this hides the node_modules directory that exists in the host system
     ports:
       - ${PORT_API}:${PORT_API}
+      # - 3005:3000
       - 9229:9229
     networks:
       - backend
