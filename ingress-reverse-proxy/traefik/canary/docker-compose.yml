@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.0
+    command:
+      - --providers.file
+      - --providers.file.filename=/etc/traefik/dync_conf.yaml
+      - --api
+      - --api.dashboard
+      - --api.insecure
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./conf:/etc/traefik/
+
+  service1:
+    image: containous/whoami
+    restart: always
+    # labels:
+    #   - "traefik.port=8180"
+    ports:
+      - "8180:80"
+    expose:
+      - 80
+  service2:
+    image: nginx
+    restart: always
+    # labels:
+    #   - "traefik.port=8181"
+    ports:
+      - "8181:80"
+    expose:
+      - 80

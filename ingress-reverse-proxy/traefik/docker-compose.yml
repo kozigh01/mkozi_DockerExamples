@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    # can see dashboard at: http://localhost:8080
+    # can see rawdata at: http://localhost:8080/api/rawdata
+    image: traefik:v2.2
+    command: 
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  whoami:
+    # docker-compose up -d --scale whoami=2
+    # can see info at: http://whoami.docker.localhost/
+    image: containous/whoami
+    command:
+      - --port=8082
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)
+      - traefik.http.services.whoami.loadbalancer.server.port=8082
+
+
+  # whoami1:
+  #   # docker-compose up -d --scale whoami=2
+  #   # can see info at: http://whoami.docker.localhost/
+  #   image: containous/whoami
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.whoami1.rule=Host(`camaruy.whoami.docker.localhost`)"
+  #     - "traefik.http.routers.whoami1.entrypoints=web"
+
+  #     - "traefik.http.routers.whoami1.service=canary@file"
+  #     - "traefik.http.services.whoami1_svc.loadbalancer.server.port=3000"
+      
+  # whoami2:
+  #       # docker-compose up -d --scale whoami=2
+  #       # can see info at: http://whoami.docker.localhost/
+  #       image: containous/whoami
+  #       labels:
+  #         - "traefik.enable=true"
+  #         - "traefik.http.services.whoami2_svc.loadbalancer.server.port=3000" ## this is optional in this case
