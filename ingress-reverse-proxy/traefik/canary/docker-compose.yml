@@ -12,6 +12,8 @@ services:
     ports:
       - "80:80"
       - "8080:8080"
+    networks: 
+      - proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./conf:/etc/traefik/
@@ -23,6 +25,8 @@ services:
     #   - "traefik.port=8180"
     ports:
       - "8180:80"
+    networks: 
+      - proxy
     expose:
       - 80
   service2:
@@ -32,5 +36,10 @@ services:
     #   - "traefik.port=8181"
     ports:
       - "8181:80"
+    networks: 
+      - proxy
     expose:
       - 80
+
+networks:
+  proxy:

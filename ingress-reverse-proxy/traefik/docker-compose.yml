@@ -6,44 +6,56 @@ services:
     # can see rawdata at: http://localhost:8080/api/rawdata
     image: traefik:v2.2
     command: 
-      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+      - "--entrypoints.web.address=:80"  
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
+      # enable the dashboard
+      - "--api.insecure=true"
+      # https
+      - --entrypoints.websecure.address=:443
+      - --providers.file.directory=/configuration/
+      - --providers.file.watch=true
+      # # middleware redirect
+      # - "traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https"
+      # # # global redirect to https
+      # - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
+      # - "traefik.http.routers.redirs.entrypoints=web"
+      # - "traefik.http.routers.redirs.middlewares=httpsredirect"
     ports:
       - "80:80"
       - "8080:8080"
+      - "443:443"
     volumes: 
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./configuration/:/configuration/
 
   whoami:
     # docker-compose up -d --scale whoami=2
     # can see info at: http://whoami.docker.localhost/
+    # can see info at: https://whoami.docker.localhost/
+    # https://docs.traefik.io/middlewares/basicauth/
+    # https://medium.com/@techupbusiness/add-basic-authentication-in-docker-compose-files-with-traefik-34c781234970
     image: containous/whoami
     command:
       - --port=8082
     labels:
       - traefik.enable=true
+      - traefik.http.routers.whoami.entrypoints=web,websecure
       - traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)
       - traefik.http.services.whoami.loadbalancer.server.port=8082
-
-
-  # whoami1:
-  #   # docker-compose up -d --scale whoami=2
-  #   # can see info at: http://whoami.docker.localhost/
-  #   image: containous/whoami
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.whoami1.rule=Host(`camaruy.whoami.docker.localhost`)"
-  #     - "traefik.http.routers.whoami1.entrypoints=web"
-
-  #     - "traefik.http.routers.whoami1.service=canary@file"
-  #     - "traefik.http.services.whoami1_svc.loadbalancer.server.port=3000"
-      
-  # whoami2:
-  #       # docker-compose up -d --scale whoami=2
-  #       # can see info at: http://whoami.docker.localhost/
-  #       image: containous/whoami
-  #       labels:
-  #         - "traefik.enable=true"
-  #         - "traefik.http.services.whoami2_svc.loadbalancer.server.port=3000" ## this is optional in this case
+      # basic auth using middleware
+      - traefik.http.routers.whoami.middlewares=auth
+      - traefik.http.middlewares.auth.basicauth.users=test:$$2y$$05$$Ys2pLEKnB5V6oHHFU3UHOuss.i9QBnM.iNK5DrNFa7hkkl6GXSrPK # pw=testing
+      - traefik.http.middlewares.auth.basicauth.removeheader=true
+      # https
+      - traefik.http.routers.whoami.tls=true
+      # # https redirect
+      # # - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https
+      # # - traefik.http.routers.whoami.middlewares=httpredirect
+      # - traefik.http.routers.whoamisecure.rule=Host(`whoami.docker.localhost`)
+      # - traefik.http.routers.whoamisecure.entrypoints=websecure
+      # - traefik.http.routers.whoamisecure.tls=true
+      # - traefik.http.services.whoamisecure.loadbalancer.server.port=8082
+      # # - traefik.http.middlewares.whoami.redirectscheme.scheme=https
+      # # - traefik.http.routers.whoami.middlewares=redirect-to-https
