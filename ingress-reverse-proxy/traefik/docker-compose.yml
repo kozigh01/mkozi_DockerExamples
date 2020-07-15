@@ -6,56 +6,84 @@ services:
     # can see rawdata at: http://localhost:8080/api/rawdata
     image: traefik:v2.2
     command: 
-      - "--log.level=DEBUG"
-      - "--entrypoints.web.address=:80"  
+      # - "--log.level=DEBUG"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"  
       # enable the dashboard
       - "--api.insecure=true"
       # https
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration/
       - --providers.file.watch=true
-      # # middleware redirect
-      # - "traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https"
-      # # # global redirect to https
-      # - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
-      # - "traefik.http.routers.redirs.entrypoints=web"
-      # - "traefik.http.routers.redirs.middlewares=httpsredirect"
+    # labels:
+    #   # middleware redirect
+    #   - "traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https"
+    #   # global redirect to https
+    #   - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
+    #   - "traefik.http.routers.redirs.entrypoints=web"
+    #   - "traefik.http.routers.redirs.middlewares=httpsredirect"
     ports:
       - "80:80"
       - "8080:8080"
       - "443:443"
+    networks: 
+      - proxy
     volumes: 
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./configuration/:/configuration/
 
-  whoami:
+  whoami1:
     # docker-compose up -d --scale whoami=2
-    # can see info at: http://whoami.docker.localhost/
-    # can see info at: https://whoami.docker.localhost/
+    # can see info at: http://whoami1.docker.localhost/
     # https://docs.traefik.io/middlewares/basicauth/
     # https://medium.com/@techupbusiness/add-basic-authentication-in-docker-compose-files-with-traefik-34c781234970
     image: containous/whoami
     command:
       - --port=8082
+    networks: 
+      - proxy
     labels:
+      #------------------------------------------------
+      # regular http://whoami.docker.localhost/ setup
+      #------------------------------------------------
       - traefik.enable=true
-      - traefik.http.routers.whoami.entrypoints=web,websecure
-      - traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)
-      - traefik.http.services.whoami.loadbalancer.server.port=8082
+      - traefik.http.routers.whoami1.entrypoints=web,websecure
+      - traefik.http.routers.whoami1.rule=Host(`whoami1.docker.localhost`)
+      - traefik.http.services.whoami1.loadbalancer.server.port=8082
+
       # basic auth using middleware
-      - traefik.http.routers.whoami.middlewares=auth
+      - traefik.http.routers.whoami1.middlewares=auth
       - traefik.http.middlewares.auth.basicauth.users=test:$$2y$$05$$Ys2pLEKnB5V6oHHFU3UHOuss.i9QBnM.iNK5DrNFa7hkkl6GXSrPK # pw=testing
       - traefik.http.middlewares.auth.basicauth.removeheader=true
+      
+      # # https - turn this on to enable https, houerver it will kill http
+      # - traefik.http.routers.whoami1.tls=true
+
+  whoami2:
+    # http redirect example
+    # can see info at: http://whoami2.docker.localhost/  (will redirect to https)
+    # can see info at: https://whoami2.docker.localhost/
+    image: containous/whoami
+    command:
+      - --port=8083
+    networks: 
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.whoami2.loadbalancer.server.port=8083
+
+      # http
+      - traefik.http.routers.whoami2.entrypoints=web
+      - traefik.http.routers.whoami2.rule=Host(`whoami2.docker.localhost`)
+      
       # https
-      - traefik.http.routers.whoami.tls=true
-      # # https redirect
-      # # - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https
-      # # - traefik.http.routers.whoami.middlewares=httpredirect
-      # - traefik.http.routers.whoamisecure.rule=Host(`whoami.docker.localhost`)
-      # - traefik.http.routers.whoamisecure.entrypoints=websecure
-      # - traefik.http.routers.whoamisecure.tls=true
-      # - traefik.http.services.whoamisecure.loadbalancer.server.port=8082
-      # # - traefik.http.middlewares.whoami.redirectscheme.scheme=https
-      # # - traefik.http.routers.whoami.middlewares=redirect-to-https
+      - traefik.http.routers.whoami2secure.entrypoints=websecure
+      - traefik.http.routers.whoami2secure.rule=Host(`whoami2.docker.localhost`)
+      - traefik.http.routers.whoami2secure.tls=true
+
+      # redirect
+      - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https
+      - traefik.http.routers.whoami2.middlewares=httpsredirect
+networks: 
+  proxy:
