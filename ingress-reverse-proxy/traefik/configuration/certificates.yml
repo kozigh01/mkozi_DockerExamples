@@ -1,11 +1,11 @@
 tls:
   certificates:
-    - certFile: "/home/mkozi/git/mkozi/mkozi_DockerExamples/ingress-reverse-proxy/traefik/configuration/devcerts/docker.localhost.crt"
-      keyFile: "/home/mkozi/git/mkozi/mkozi_DockerExamples/ingress-reverse-proxy/traefik/configuration/devcerts/docker.localhost.key"
-      stores:
-        - default
-  stores:
-    default:
-      defaultCertificate:
-        certFile: "/home/mkozi/git/mkozi/mkozi_DockerExamples/ingress-reverse-proxy/traefik/configuration/devcerts/docker.localhost.crt"
-        keyFile: "/home/mkozi/git/mkozi/mkozi_DockerExamples/ingress-reverse-proxy/traefik/configuration/devcerts/docker.localhost.key"
+    - certFile: "/configuration/devcerts/docker-localhost.crt"
+      keyFile: "/configuration/devcerts/docker-localhost.key"
+  #     stores:
+  #       - default
+  # stores:
+  #   default:
+  #     defaultCertificate:
+  #       certFile: "/configuration/docker.localhost.crt"
+  #       keyFile: "/configuration/devcerts/docker.localhost.key"
