@@ -2,7 +2,8 @@ version: "3.8"
 
 services:
   reverse-proxy:
-    # can see dashboard at: http://localhost:8080
+    # can see dashboard at: http://localhost:8080  - need to uncomment --api.insecure
+    # can see dashboard at: http://api.docker.localhost
     # can see rawdata at: http://localhost:8080/api/rawdata
     image: traefik:v2.2
     command: 
@@ -11,19 +12,28 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       # enable the dashboard
-      - --api.insecure=true
+      # - --api.insecure=true
+      - --api=true
       # https
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration
       - --providers.file.watch=true
-    # labels:
-      # - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https # couldn't get this to work
-    #   - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https
-    # - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https
-    # global redirect to https
-    #   - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
-    #   - "traefik.http.routers.redirs.entrypoints=web"
-    #   - "traefik.http.routers.redirs.middlewares=httpsredirect"
+    labels:
+      - traefik.enable=true
+      # middlewares
+      - traefik.http.middlewares.auth.basicauth.users=test:$$2y$$05$$Ys2pLEKnB5V6oHHFU3UHOuss.i9QBnM.iNK5DrNFa7hkkl6GXSrPK # pw=testing
+      - traefik.http.middlewares.auth.basicauth.removeheader=true
+      - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https # couldn't get this to work
+      # global redirect to https
+      - traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
+      - traefik.http.routers.redirs.entrypoints=web
+      - traefik.http.routers.redirs.middlewares=httpsredirect
+      # dashboard
+      - traefik.http.routers.reverse-proxy.tls=true
+      - traefik.http.routers.reverse-proxy.entrypoints=websecure
+      - traefik.http.routers.reverse-proxy.rule=Host(`api.docker.localhost`)
+      - traefik.http.routers.reverse-proxy.service=api@internal
+      - traefik.http.routers.reverse-proxy.middlewares=auth
     ports:
       - "80:80"
       - "8080:8080"
@@ -55,11 +65,13 @@ services:
       - traefik.http.services.whoami1.loadbalancer.server.port=8082
 
       # basic auth using middleware
-      - traefik.http.middlewares.auth.basicauth.users=test:$$2y$$05$$Ys2pLEKnB5V6oHHFU3UHOuss.i9QBnM.iNK5DrNFa7hkkl6GXSrPK # pw=testing
-      - traefik.http.middlewares.auth.basicauth.removeheader=true
+      # - traefik.http.middlewares.auth.basicauth.users=test:$$2y$$05$$Ys2pLEKnB5V6oHHFU3UHOuss.i9QBnM.iNK5DrNFa7hkkl6GXSrPK # pw=testing
+      # - traefik.http.middlewares.auth.basicauth.removeheader=true
       - traefik.http.routers.whoami1.middlewares=auth
       
-      # # https - turn this on to enable https, houerver it will kill http
+      # this service doesn't define an https options, so is ignored by the global http -> https redirect
+
+      # https - turn this on to enable https (and add websecure to entrypoints), houerver it will kill http
       # - traefik.http.routers.whoami1.tls=true
 
   whoami2:
@@ -84,9 +96,32 @@ services:
       - traefik.http.routers.whoami2secure.rule=Host(`whoami2.docker.localhost`)
       - traefik.http.routers.whoami2secure.tls=true
 
+      # since this service explicitly defines a http protocol, the global https redirect will be overwritten and won't work
+      #   so, need to define redirect explicitly also to get redirect http -> workding
       # redirect
       - traefik.http.middlewares.httpsredirect.redirectscheme.scheme=https  # put this in the traefik service
       - traefik.http.routers.whoami2.middlewares=httpsredirect
+
+  whoami3:
+    # http redirect example
+    # can see info at: http://whoami2.docker.localhost/  (will redirect to https)
+    # can see info at: https://whoami2.docker.localhost/
+    image: containous/whoami
+    command:
+      - --port=8084
+    networks: 
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.whoami3.loadbalancer.server.port=8084
+
+      # http - none, so will use global http -> https redirect
+      
+      # https
+      - traefik.http.routers.whoami3secure.entrypoints=websecure
+      - traefik.http.routers.whoami3secure.rule=Host(`whoami3.docker.localhost`)
+      - traefik.http.routers.whoami3secure.tls=true
+
 
 networks: 
   proxy:
