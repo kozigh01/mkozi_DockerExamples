@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  traefik:
+    image: traefik:v2.2
+    command:
+      - --api.insecure
+      - --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  whoami:
+    # traefik load balancing:
+    # docker-compose up -d --scale whoami=2
+    # curl -H Host:whoami.docker.localhost http://127.0.0.1
+    image: containous/whoami
+    command:
+      - --port=8081
+    labels:
+      - traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)
+      - traefik.http.services.whoami.loadBalancer.server.port=8081
+
+    
